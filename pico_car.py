@@ -4,16 +4,7 @@ from machine import Pin, PWM
 from onewire import OneWire
 import rp2
 import framebuf
-'''
-library:
-    pciocar
-    ws2812b
-    ultrasonic
-    SSD1306
-    SSD1306_I2C
-    ir
-    ds18b20
-'''
+
 
 S1 = PWM(Pin(18))
 S2 = PWM(Pin(19))
@@ -24,7 +15,7 @@ R_A = PWM(Pin(10))
 L_B = PWM(Pin(13))
 L_A = PWM(Pin(12))
 
-# register definitions
+
 SET_CONTRAST        = 0x81
 SET_ENTIRE_ON       = 0xa4
 SET_NORM_INV        = 0xa6
@@ -140,9 +131,9 @@ class pico_car:
         elif num == 4:
             S4.duty_u16(int(angle))
 
-#delay here is the reset time. You need a pause to reset the LED strip back to the initial LED
-#however, if you have quite a bit of processing to do before the next time you update the strip
-#you could put in delay=0 (or a lower delay)
+
+
+
 class ws2812b:
     def __init__(self, num_leds, state_machine, delay=0.001):
         self.pixels = array.array("I", [0 for _ in range(num_leds)])
@@ -152,7 +143,7 @@ class ws2812b:
         self.delay = delay
         self.brightnessvalue = 255
 
-    # Set the overal value to adjust brightness when updating leds
+    
     def brightness(self, brightness = None):
         if brightness == None:
             return self.brightnessvalue
@@ -163,7 +154,7 @@ class ws2812b:
             brightness = 255
         self.brightnessvalue = brightness
 
-      # Create a gradient with two RGB colors between "pixel1" and "pixel2" (inclusive)
+      
     def set_pixel_line_gradient(self, pixel1, pixel2, left_red, left_green, left_blue, right_red, right_green, right_blue):
         if pixel2 - pixel1 == 0: return
     
@@ -178,26 +169,26 @@ class ws2812b:
             
             self.set_pixel(left_pixel + i, red, green, blue)
     
-      # Set an array of pixels starting from "pixel1" to "pixel2" to the desired color.
+      
     def set_pixel_line(self, pixel1, pixel2, red, green, blue):
         for i in range(pixel1, pixel2+1):
             self.set_pixel(i, red, green, blue)
 
     def set_pixel(self, pixel_num, red, green, blue):
-        # Adjust color values with brightnesslevel
+        
         blue = round(blue * (self.brightness() / 255))
         red = round(red * (self.brightness() / 255))
         green = round(green * (self.brightness() / 255))
 
         self.pixels[pixel_num] = blue | red << 8 | green << 16
     
-    # rotate x pixels to the left
+    
     def rotate_left(self, num_of_pixels):
         if num_of_pixels == None:
             num_of_pixels = 1
         self.pixels = self.pixels[num_of_pixels:] + self.pixels[:num_of_pixels]
 
-    # rotate x pixels to the right
+    
     def rotate_right(self, num_of_pixels):
         if num_of_pixels == None:
             num_of_pixels = 1
@@ -234,7 +225,7 @@ class ultrasonic():
             t2 += 1
 
         time.sleep(0.001)
-        #print ("distance_1 is %d " % ((t2 - t1)* 2.0192))
+        
         return ((t2 - t1)* 2.0192/10)
 
     def Distance_accurate(self):
@@ -242,20 +233,20 @@ class ultrasonic():
         ultrasonic = []
         while num < 5:
                 distance = self.Distance()
-                #print("distance is %f"%(distance))
+                
                 while int(distance) == -1 :
                     distance = self.Distance()
                     return int(999)
-                    #print("Tdistance is %f"%(distance) )
+                    
                 while (int(distance) >= 500 or int(distance) == 0) :
                     distance = self.Distance()
                     return int(999)
-                    #print("Edistance is %f"%(distance) )
+                    
                 ultrasonic.append(distance)
                 num = num + 1
                 time.sleep(0.01)
         distance = (ultrasonic[1] + ultrasonic[2] + ultrasonic[3])/3
-        #print("distance is %f cm"%(distance) ) 
+        
         return int(distance)
 
 
@@ -265,35 +256,35 @@ class SSD1306:
         self.height = height
         self.external_vcc = external_vcc
         self.pages = self.height
-        # Note the subclass must initialize self.framebuf to a framebuffer.
-        # This is necessary because the underlying data buffer is different
-        # between I2C and SPI implementations (I2C needs an extra byte).
+        
+        
+        
         self.poweron()
         self.init_display()
 
     def init_display(self):
         for cmd in (
-            SET_DISP | 0x00, # off
-            # address setting
-            SET_MEM_ADDR, 0x00, # horizontal
-            # resolution and layout
+            SET_DISP | 0x00, 
+            
+            SET_MEM_ADDR, 0x00, 
+            
             SET_DISP_START_LINE | 0x00,
-            SET_SEG_REMAP | 0x01, # column addr 127 mapped to SEG0
+            SET_SEG_REMAP | 0x01, 
             SET_MUX_RATIO, self.height - 1,
-            SET_COM_OUT_DIR | 0x08, # scan from COM[N] to COM0
+            SET_COM_OUT_DIR | 0x08, 
             SET_DISP_OFFSET, 0x00,
             SET_COM_PIN_CFG, 0x02 if self.height == 32 else 0x12,
-            # timing and driving scheme
+            
             SET_DISP_CLK_DIV, 0x80,
             SET_PRECHARGE, 0x22 if self.external_vcc else 0xf1,
-            SET_VCOM_DESEL, 0x30, # 0.83*Vcc
-            # display
-            SET_CONTRAST, 0xff, # maximum
-            SET_ENTIRE_ON, # output follows RAM contents
-            SET_NORM_INV, # not inverted
-            # charge pump
+            SET_VCOM_DESEL, 0x30, 
+            
+            SET_CONTRAST, 0xff, 
+            SET_ENTIRE_ON, 
+            SET_NORM_INV, 
+            
             SET_CHARGE_PUMP, 0x10 if self.external_vcc else 0x14,
-            SET_DISP | 0x01): # on
+            SET_DISP | 0x01): 
             self.write_cmd(cmd)
         self.fill(0)
         self.show()
@@ -312,7 +303,7 @@ class SSD1306:
         x0 = 0
         x1 = self.width - 1
         if self.width == 64:
-            # displays with width of 64 pixels are shifted by 32
+            
             x0 += 32
             x1 += 32
         self.write_cmd(SET_COL_ADDR)
@@ -341,24 +332,24 @@ class SSD1306_I2C(SSD1306):
         self.i2c = i2c
         self.addr = addr
         self.temp = bytearray(2)
-        # Add an extra byte to the data buffer to hold an I2C data/command byte
-        # to use hardware-compatible I2C transactions.  A memoryview of the
-        # buffer is used to mask this byte from the framebuffer operations
-        # (without a major memory hit as memoryview doesn't copy to a separate
-        # buffer).
+        
+        
+        
+        
+        
         self.buffer = bytearray(((height // 8) * width) + 1)
-        self.buffer[0] = 0x40  # Set first byte of data buffer to Co=0, D/C=1
+        self.buffer[0] = 0x40  
         self.framebuf = framebuf.FrameBuffer1(memoryview(self.buffer)[1:], width, height)
         super().__init__(width, height, external_vcc)
 
     def write_cmd(self, cmd):
-        self.temp[0] = 0x80 # Co=1, D/C#=0
+        self.temp[0] = 0x80 
         self.temp[1] = cmd
         self.i2c.writeto(self.addr, self.temp)
 
     def write_framebuf(self):
-        # Blast out the frame buffer using a single I2C transaction to support
-        # hardware I2C interfaces.
+        
+        
         self.i2c.writeto(self.addr, self.buffer)
 
     def poweron(self):
@@ -385,7 +376,7 @@ class ir():
             while self.Pin.value() == 1 and count < 160:
                 count += 1
                 time.sleep(0.00003)
-            #print("")
+            
             idx = 0
             cnt = 0
             data = [0,0,0,0]
@@ -441,7 +432,7 @@ class ds:
             print ("no sensors detected")
         if self.no_addr>=1:
             temp_array=[]
-            #print ('number of sensors: ',self.no_addr)
+            
             for i in range(1,self.no_addr+1):
                 temp_array.append(self._request(self.addr[i-1]))
                 return temp_array       
@@ -451,8 +442,8 @@ class ds:
         ow=OneWire(Pin(self.pin))
         ow.reset()
         ow.select_rom(addr)
-        ow.writebyte(0x44) #command to take reading
-        if self.res==12: #the resolution determines the amount of time needed
+        ow.writebyte(0x44) 
+        if self.res==12: 
             time.sleep_ms(1000)
         if self.res==11:
             time.sleep_ms(400)
@@ -460,21 +451,21 @@ class ds:
             time.sleep_ms(200)
         if self.res==9:
             time.sleep_ms(100)
-        ow.reset() #reset required for data
+        ow.reset() 
         ow.select_rom(addr)
-        ow.writebyte(0xBE) #command to send temperature data
-        #all nine bytes must be read
-        LSB=ow.readbyte() #least significant byte
-        MSB=ow.readbyte() #most significant byte
+        ow.writebyte(0xBE) 
+        
+        LSB=ow.readbyte() 
+        MSB=ow.readbyte() 
         ow.readbyte()
         ow.readbyte()
-        ow.readbyte() #this is the configuration byte for resolution
+        ow.readbyte() 
         ow.readbyte()
         ow.readbyte()
         ow.readbyte()
         ow.readbyte()
-        ow.reset() #reset at end of data transmission
-        #convert response to binary, format the binary string, and perform math
+        ow.reset() 
+        
         d_LSB=float(0)
         d_MSB=float(0)
         count=0
@@ -535,13 +526,7 @@ class ds:
                     d_MSB+=2**4
             count+=1
         temp=(d_LSB+d_MSB)*sign
-        '''
-        if self.unit=='c'or self.unit=='C':
-            print("TEMP is: "+str(temp)+" degrees C")
-        if self.unit=='f'or self.unit=='F':
-            temp=(temp*9/5)+32
-            print("TEMP F is: "+str(temp))
-        '''
+        
         return temp
 
     def _res(self,addr):
@@ -553,22 +538,22 @@ class ds:
             ow.writebyte(0x7F)
             ow.writebyte(0x7F)
             ow.writebyte(0x7F)
-            #print ("12 bit mode")
+            
         if self.res==11:
             ow.writebyte(0x5F)
             ow.writebyte(0x5F)
             ow.writebyte(0x5F)
-            #print ("11 bit mode")
+            
         if self.res==10:
             ow.writebyte(0x3F)
             ow.writebyte(0x3F)
             ow.writebyte(0x3F)
-            #print ("10 bit mode")
+            
         if self.res==9:
             ow.writebyte(0x1F)
             ow.writebyte(0x1F)
             ow.writebyte(0x1F)
-            #print ("9 bit mode")
+            
         ow.reset()  
 
 
