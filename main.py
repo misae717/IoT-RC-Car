@@ -4,33 +4,31 @@ from pico_car import SSD1306_I2C, pico_car, ws2812b, ultrasonic
 
 Motor = pico_car()
 Motor.Car_Stop()
-num_leds = 8  
-
+num_leds = 8 
 pixels = ws2812b(num_leds, 0)
 pixels.fill(0,0,0)
 pixels.show()
-
+# set buzzer pin
 BZ = PWM(Pin(22))
 BZ.freq(1000)
-
+# Initialize music
 CM = [0, 330, 350, 393, 441, 495, 556, 624]
-
+#initialization ultrasonic
 ultrasonic = ultrasonic()
-
+#initialization oled
 i2c=I2C(1, scl=Pin(15),sda=Pin(14), freq=100000)
 oled = SSD1306_I2C(128, 32, i2c)
 oled.fill(0)  
 oled.text('IoT-SE322', 0, 0)  
 oled.text('Saleh Alghannam', 0, 10)  
 oled.show()  
-
-
+#initialization Bluetooth
 uart = UART(0, 9600, bits=8, parity=None, stop=1, tx=Pin(16), rx=Pin(17))
 dat = 0
-
+#initialization ADC
 Quantity_of_electricity = machine.ADC(28)
 Sound = machine.ADC(27)
-
+#define Timer
 tim = Timer()
 def tick(timer):
     w_power = int(Quantity_of_electricity.read_u16()/65535*240)
@@ -45,14 +43,13 @@ def tick(timer):
     uart.write(',')
     uart.write(str(w_power))
     uart.write('#')
-
+#set timer frequency 0.1
 tim.init(freq = 0.1,mode = Timer.PERIODIC,callback = tick)
 
-
+#define water lamp
 def water():
     global i,dat
     i = 0
-
     while dat != b'M#':
         while uart.any() > 0:
             dat = uart.read(2)
@@ -70,7 +67,7 @@ def water():
         time.sleep(0.1)
     i = 0
 
-
+#define breathing lamp
 def breathing():
     global i,dat
     i = 0
@@ -88,7 +85,7 @@ def breathing():
         time.sleep(0.005)
     i = 0
 
-
+#define horse lamp
 def horse():
     global dat
     while dat != b'M#':
@@ -96,20 +93,20 @@ def horse():
             dat = uart.read(2)
         for i in range(num_leds):
             for j in range(num_leds):
-                
+                #pixel_num, red, green, blue
                 pixels.set_pixel(j,abs(i+j)%10,abs(i-(j+3))%10,abs(i-(j+6))%10)
             pixels.show()
             time.sleep(0.05)
 
-
-
-
-
+#Define the tracking sensor, 1-4 from left to right
+#recognize that black is 0 and white is 1
+#Tracing_1 Tracing_2 Tracing_3 Tracing_4
+#    2         3        4          5     
 Tracing_1 = machine.Pin(2, machine.Pin.IN)
 Tracing_2 = machine.Pin(3, machine.Pin.IN)
 Tracing_3 = machine.Pin(4, machine.Pin.IN)
 Tracing_4 = machine.Pin(5, machine.Pin.IN)
-
+#define line
 def line():
     global dat
     oled.fill(0)
@@ -117,54 +114,35 @@ def line():
         while uart.any() > 0:
             dat = uart.read(2)
                 
-        
-        
-        
-        
-        
-        
-        
+
         if (Tracing_1.value() == 0 or Tracing_2.value() == 0) and Tracing_4.value() == 0:
             Motor.Car_Right(120,120)
             for i in range(num_leds):
                 pixels.set_pixel(i,0,255,0)
             oled.text('Turn Right', 0, 0)
-            
-            
-        
-        
-        
-        
-        
-        
-        
+            time.sleep(0.08)
+
         elif Tracing_1.value() == 0 and (Tracing_3.value() == 0 or Tracing_4.value() == 0):
             Motor.Car_Left(120,120)
             for i in range(num_leds):
                 pixels.set_pixel(i,0,0,255)
             oled.text('Turn Left', 0, 0)
+            time.sleep(0.08)
             
-            
-        
-        
-        
+
         elif Tracing_1.value() == 0:
             Motor.Car_Run(0,130)
             for i in range(num_leds):
                 pixels.set_pixel(i,0,0,255)
             oled.text('Turn Left', 0, 0)
         
-        
-        
-        
+
         elif Tracing_4.value() == 0:
             Motor.Car_Run(130,0)
             for i in range(num_leds):
                 pixels.set_pixel(i,0,255,0)
             oled.text('Turn Right', 0, 0)
-        
-        
-        
+
         elif Tracing_2.value() == 0 and Tracing_3.value() == 0:
             Motor.Car_Run(110,110)
             for i in range(num_leds):
@@ -174,28 +152,27 @@ def line():
         pixels.show()
         oled.show()
         oled.fill(0)
-    
-    
+
     pixels.fill(0,0,0)
     Motor.Car_Stop()
     BZ.duty_u16(0)
 
-
+#define ultrasonic avoid    
 def avoid():
     global dat
     oled.fill(0)
     while dat != b'V#':
         while uart.any() > 0:
             dat = uart.read(2)
-        
+        #get distance
         distance = ultrasonic.Distance_accurate()
         print("distance is %d cm"%(distance) )
-        
+        #display distance
         oled.text('distance:', 0, 0)
         oled.text(str(distance), 75, 0)
         oled.show()
         oled.fill(0)
-        
+        #Control action
         if distance < 10:
             for i in range(num_leds):
                 pixels.set_pixel(i,255,0,0)
@@ -224,19 +201,19 @@ def avoid():
     Motor.Car_Stop()
     BZ.duty_u16(0)
 
-
+#define ultrasonic voice    
 def voice():
     global dat
     oled.fill(0)
     while dat != b'V#':
         while uart.any() > 0:
             dat = uart.read(2)
-        
+        #get value
         sounds = Sound.read_u16()
         print(sounds)
         oled.text('Sound:', 0, 0)
         oled.text(str(sounds), 50, 0)
-        
+        #Control action
         if sounds > 22000:
             while sounds > 10000:
                 Motor.Car_Stop()
@@ -306,10 +283,10 @@ def voice():
     BZ.duty_u16(0)
 
 while True:
-    
+    #receive data
     while uart.any() > 0:
         dat = uart.read(2)
-        
+        #OLED display
         if dat == b'X#':
             for oledi in range(128):
                 for oledj in range(10):
@@ -364,7 +341,7 @@ while True:
                 BZ.duty_u16(500)
                 BZ.freq(466)
 
-    
+    #car control
     if dat == b'A#':
         Motor.Car_Run(255,255)
     elif dat == b'B#':
@@ -379,7 +356,7 @@ while True:
         Motor.Car_Right(255,255)
     elif dat == b'0#':
         Motor.Car_Stop()
-    
+    #music control
     elif dat == b'1#':
         BZ.duty_u16(500)
         BZ.freq(262)
@@ -437,7 +414,7 @@ while True:
         i = 0
         brightness = 0
         fadeAmount = 1
-    
+    #mode
     elif dat == b'S#':
         line()
     elif dat == b'T#':
